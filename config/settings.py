@@ -39,6 +39,10 @@ class Settings(BaseSettings):
 
     YOOKASSA_DEFAULT_RECEIPT_EMAIL: Optional[str] = Field(default=None)
     YOOKASSA_VAT_CODE: int = Field(default=1)
+    YOOKASSA_TAX_SYSTEM_CODE: Optional[int] = Field(
+        default=None,
+        description="Tax system code for YooKassa receipts (1..6 per 54-FZ)"
+    )
     # Deprecated: explicit receipt fields are now derived from YOOKASSA_AUTOPAYMENTS_ENABLED
     YOOKASSA_PAYMENT_MODE: str = Field(default="full_prepayment")
     YOOKASSA_PAYMENT_SUBJECT: str = Field(default="service")
@@ -640,6 +644,7 @@ class Settings(BaseSettings):
         'SEVERPAY_LIFETIME_MINUTES',
         'LOG_CHAT_ID',
         'LOG_THREAD_ID',
+        'YOOKASSA_TAX_SYSTEM_CODE',
         mode='before'
     )
     @classmethod
@@ -648,6 +653,15 @@ class Settings(BaseSettings):
             v = v.strip()
             if not v:
                 return None
+        return v
+
+    @field_validator('YOOKASSA_TAX_SYSTEM_CODE')
+    @classmethod
+    def validate_yookassa_tax_system_code(cls, v):
+        if v is None:
+            return None
+        if not 1 <= v <= 6:
+            raise ValueError("YOOKASSA_TAX_SYSTEM_CODE must be an integer from 1 to 6.")
         return v
     
     # Notification types
