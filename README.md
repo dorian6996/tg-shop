@@ -385,10 +385,3 @@ cd /opt/remnawave/nginx && docker compose down && docker compose up -d && docker
 └── main.py               # Точка входа в приложение
 ```
 
-## 🔮 Планы на будущее
-
--   Расширенные типы промокодов (например, скидки в процентах).
-
-## ❤️ Поддержка
-- Карты РФ и зарубежные: [Tribute](https://t.me/tribute/app?startapp=dqdg)
-- Crypto: `USDT TRC-20 TT3SqBbfU4vYm6SUwUVNZsy278m2xbM4GE`
