@@ -104,8 +104,9 @@ class Settings(BaseSettings):
     PLATEGA_BASE_URL: str = Field(default="https://app.platega.io")
     PLATEGA_MERCHANT_ID: Optional[str] = None
     PLATEGA_SECRET: Optional[str] = None
-    PLATEGA_PAYMENT_METHOD: int = Field(
-        default=2, description="Platega payment method ID (e.g., 2 for SBP QR)"
+    PLATEGA_PAYMENT_METHOD: List[int] = Field(
+        default=[2],
+        description="Platega payment method IDs, comma-separated (2=SBP QR, 11=RU cards, 13=crypto)",
     )
     PLATEGA_RETURN_URL: Optional[str] = Field(default=None)
     PLATEGA_FAILED_URL: Optional[str] = Field(default=None)
@@ -538,6 +539,21 @@ class Settings(BaseSettings):
         """Autopay features are available only when YooKassa itself is enabled."""
         return bool(self.YOOKASSA_ENABLED and self.YOOKASSA_AUTOPAYMENTS_ENABLED)
 
+    # Maps Platega method IDs to human-readable slugs used in payment_methods_order
+    PLATEGA_METHOD_LABELS: Dict[int, str] = {
+        2:  "💳 СБП (Platega)",
+        11: "🏦 Карта МИР (Platega)",
+        13: "₿ Крипто (Platega)",
+    }
+
+    @computed_field
+    @property
+    def platega_method_slugs(self) -> List[str]:
+        """Returns list of per-method slugs like ['platega_2', 'platega_11'] for enabled Platega methods."""
+        if not self.PLATEGA_ENABLED:
+            return []
+        return [f"platega_{mid}" for mid in self.PLATEGA_PAYMENT_METHOD]
+
     @computed_field
     @property
     def payment_methods_order(self) -> List[str]:
@@ -553,13 +569,23 @@ class Settings(BaseSettings):
             "cryptopay",
         ]
         if not self.PAYMENT_METHODS_ORDER:
-            return default_order
-        methods = []
-        for item in self.PAYMENT_METHODS_ORDER.split(","):
-            slug = item.strip().lower()
-            if slug:
-                methods.append(slug)
-        return methods or default_order
+            raw_order = default_order
+        else:
+            methods = []
+            for item in self.PAYMENT_METHODS_ORDER.split(","):
+                slug = item.strip().lower()
+                if slug:
+                    methods.append(slug)
+            raw_order = methods or default_order
+
+        # Expand "platega" into per-method slugs (e.g. platega_2, platega_11, platega_13)
+        expanded: List[str] = []
+        for slug in raw_order:
+            if slug == "platega":
+                expanded.extend(self.platega_method_slugs)
+            else:
+                expanded.append(slug)
+        return expanded
     
     # Logging Configuration
     LOG_LEVEL: str = Field(
@@ -585,6 +611,16 @@ class Settings(BaseSettings):
         default=False,
         description="Hide admin-generated events from admin logs UI and CSV export",
     )
+
+    @field_validator('PLATEGA_PAYMENT_METHOD', mode='before')
+    @classmethod
+    def parse_platega_payment_methods(cls, v):
+        if isinstance(v, str):
+            parts = [p.strip() for p in v.split(',') if p.strip()]
+            return [int(p) for p in parts if p.isdigit()]
+        if isinstance(v, int):
+            return [v]
+        return v
 
     @field_validator('LOG_LEVEL', mode='before')
     @classmethod
