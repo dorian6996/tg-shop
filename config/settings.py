@@ -539,13 +539,6 @@ class Settings(BaseSettings):
         """Autopay features are available only when YooKassa itself is enabled."""
         return bool(self.YOOKASSA_ENABLED and self.YOOKASSA_AUTOPAYMENTS_ENABLED)
 
-    # Maps Platega method IDs to human-readable slugs used in payment_methods_order
-    PLATEGA_METHOD_LABELS: Dict[int, str] = {
-        2:  "💳 СБП (Platega)",
-        11: "🏦 Карта МИР (Platega)",
-        13: "₿ Крипто (Platega)",
-    }
-
     @computed_field
     @property
     def platega_method_slugs(self) -> List[str]:
