@@ -53,7 +53,21 @@ async def pay_platega_callback_handler(
         parts = data_payload.split(":")
         months = float(parts[0])
         callback_price_rub = float(parts[1])
-        sale_mode = parts[2] if len(parts) > 2 else "subscription"
+        # method_id is the 3rd part (new), sale_mode is the 4th (or 3rd in old format)
+        if len(parts) >= 4:
+            method_id = int(parts[2])
+            sale_mode = parts[3]
+        elif len(parts) == 3:
+            # old format without method_id: pay_platega:months:price:sale_mode
+            try:
+                method_id = int(parts[2])
+                sale_mode = "subscription"
+            except ValueError:
+                method_id = 0
+                sale_mode = parts[2]
+        else:
+            method_id = 0
+            sale_mode = "subscription"
     except (ValueError, IndexError):
         logging.error(f"Invalid pay_platega data in callback: {callback.data}")
         try:
@@ -159,6 +173,7 @@ async def pay_platega_callback_handler(
         currency=currency_code,
         description=payment_description,
         payload=payload_meta,
+        method_id=method_id if method_id else None,
         promo_code_service=promo_code_service,
         session=session,
     )
